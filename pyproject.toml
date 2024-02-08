@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "hcr_multiplexed_imaging"  
+name = "hcr_imaging"  
 authors = [
     {name = "Mark E. Fornace", email = "mfornace@caltech.edu"}
 ]
@@ -33,19 +33,19 @@ requires-python = ">=3.8"
 namespaces = false
 
 [tool.setuptools.package-data]
-hcr_multiplexed_imaging = ["templates/*.js"]
+hcr_imaging = ["templates/*.js"]
 
 [tool.setuptools.exclude-package-data]
-hcr_multiplexed_imaging = ["source/*"]
+hcr_imaging = ["source/*"]
 
 [tool.setuptools]
 license-files = ["LICENSE.txt"]
 
 [tool.cibuildwheel.linux]
 before-all = "yum install -y blas-static"
-environment = "HCR_MULTIPLEXED_IMAGING_BLAS=/usr/lib64/libblas.a"
+environment = "HCR_IMAGING_BLAS=/usr/lib64/libblas.a"
 
 [[tool.cibuildwheel.overrides]]
 select = "*-musllinux*"
 before-all = "apk add openblas-static"
-environment = "HCR_MULTIPLEXED_IMAGING_BLAS=/usr/lib/libopenblas.a"
+environment = "HCR_IMAGING_BLAS=/usr/lib/libopenblas.a"

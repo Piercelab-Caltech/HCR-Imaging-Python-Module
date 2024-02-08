@@ -11,7 +11,7 @@
 #include <memory>
 #include <type_traits>
 
-namespace hcr_multiplexed_imaging::py {
+namespace hcr_imaging::py {
 
 struct BufferDeleter {
     void operator()(Py_buffer *o) const noexcept {PyBuffer_Release(o);}
@@ -134,7 +134,7 @@ static PyObject* cholesky_nnls(PyObject* self, PyObject* args, PyObject* kws) no
 
         for (la::uword i = 0; i != x.n_cols; ++ i) {
             try {
-                x.col(i) = hcr_multiplexed_imaging::cholesky_nnls(a, la::Col<T>(b.col(i)));
+                x.col(i) = hcr_imaging::cholesky_nnls(a, la::Col<T>(b.col(i)));
             } catch (...) {
                 // print(x, a, b.col(i));
                 std::cout << std::setprecision(25);
@@ -172,9 +172,9 @@ static PyObject* bound_solve(PyObject* self, PyObject* args, PyObject* kws) noex
 }
 
 static PyMethodDef Methods[] = {
-    {"bound_solve", (PyCFunction)(void(*)(void)) hcr_multiplexed_imaging::py::bound_solve, METH_VARARGS | METH_KEYWORDS, "Solve bounded least-squares problem"},
-    {"cholesky_nnls", (PyCFunction)(void(*)(void)) hcr_multiplexed_imaging::py::cholesky_nnls, METH_VARARGS | METH_KEYWORDS, "Solve non-negative least-squares problem using Cholesky method"},
-    {"gmm", (PyCFunction)(void(*)(void)) hcr_multiplexed_imaging::py::gmm, METH_VARARGS | METH_KEYWORDS, "Solve Gaussian mixture model objective and gradient"},
+    {"bound_solve", (PyCFunction)(void(*)(void)) hcr_imaging::py::bound_solve, METH_VARARGS | METH_KEYWORDS, "Solve bounded least-squares problem"},
+    {"cholesky_nnls", (PyCFunction)(void(*)(void)) hcr_imaging::py::cholesky_nnls, METH_VARARGS | METH_KEYWORDS, "Solve non-negative least-squares problem using Cholesky method"},
+    {"gmm", (PyCFunction)(void(*)(void)) hcr_imaging::py::gmm, METH_VARARGS | METH_KEYWORDS, "Solve Gaussian mixture model objective and gradient"},
     {nullptr, nullptr, 0, nullptr}        /* Sentinel */
 };
 
@@ -191,5 +191,5 @@ static struct PyModuleDef module = {
 
 
 PyMODINIT_FUNC PyInit_cpp(void) {
-    return PyModule_Create(&hcr_multiplexed_imaging::py::module);
+    return PyModule_Create(&hcr_imaging::py::module);
 }

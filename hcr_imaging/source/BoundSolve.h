@@ -1,7 +1,7 @@
 #pragma once
 #include "Common.h"
 
-namespace hcr_multiplexed_imaging {
+namespace hcr_imaging {
     
 /******************************************************************************************/
 
@@ -31,7 +31,7 @@ struct VectorBound {
     VectorBound() = default;
     VectorBound(la::Mat<T> b, la::Col<T> reg) : bounds(std::move(b)), regularization(std::move(reg)) {
         if (bounds.n_rows != 2) throw std::invalid_argument("Number of rows must be 2");
-        HCR_MULTIPLEXED_IMAGING_ALL_EQUAL("Inconsistent dimension", bounds.n_cols, regularization.n_rows);
+        HCR_IMAGING_ALL_EQUAL("Inconsistent dimension", bounds.n_cols, regularization.n_rows);
     }
 
     auto operator()(T const &value, uint i, Ignore={}) const {
@@ -87,7 +87,7 @@ struct ClampSolver {
     // if D is the user domain, clamp(k, x0) should return \min_{x \in D} (x - x0)^2
     template <class X, class B, class F>
     std::tuple<value_type, uint, bool> operator()(X &&x, B const &b, F const &clamp) {
-        HCR_MULTIPLEXED_IMAGING_ALL_EQUAL("Inconsistent dimensions", a.n_rows, a.n_cols, b.n_rows, x.n_rows);
+        HCR_IMAGING_ALL_EQUAL("Inconsistent dimensions", a.n_rows, a.n_cols, b.n_rows, x.n_rows);
         if (options.warm_start && x.n_rows == u.n_rows) x = u; // use previous guess
 
         m = b - a.t() * x - clamp.regularize(b);
@@ -129,7 +129,7 @@ struct LogNormalSolver : ClampSolver<A> {
     // solve $\min_x (e^x)^T A e^x - 2 b^T e^x + x^T C x - 2 d^T x$
     template <class X, class B, class D>
     std::tuple<value_type, uint, bool> operator()(X &&x, B const &b, D const &d) {
-        HCR_MULTIPLEXED_IMAGING_ALL_EQUAL("Inconsistent dimensions", a.n_rows, a.n_cols, b.n_rows, x.n_rows);
+        HCR_IMAGING_ALL_EQUAL("Inconsistent dimensions", a.n_rows, a.n_cols, b.n_rows, x.n_rows);
         if (options.warm_start) x = u; // use previous guess
 
         m = b - a.t() * arma::exp(x);
@@ -182,7 +182,7 @@ struct LogNormalSolver : ClampSolver<A> {
  */
 template <class F, class A, class T>
 AlternatingResult<T> bound_solve(la::Mat<T> &x, A const &a, la::Mat<T> const &b, F const &bound, AlternatingOptions const &ops, la::Col<T> *norm2=nullptr) {
-	HCR_MULTIPLEXED_IMAGING_ALL_EQUAL("Inconsistent dimensions", b.n_cols, x.n_cols);
+	HCR_IMAGING_ALL_EQUAL("Inconsistent dimensions", b.n_cols, x.n_cols);
     ClampSolver<A const &> solve(a, ops);
     if (norm2 && norm2->n_rows != b.n_cols) {norm2->set_size(b.n_cols); norm2->zeros();}
 
@@ -236,7 +236,7 @@ void diagonal_bound_solve(la::Col<T> &x, la::Col<T> const &v, la::Col<T> const &
 // // 2 bounds, each bound either non-existent, 0, or finite. gives 3 * 3 - 1 = 8 possibilities
 // template <class A, class T>
 // AlternatingResult<T> bound_solve(Mat<T> &x, A const &a, la::Mat<T> const &b, Bounds const &bound, AlternatingOptions const &ops, la::Col<T> *norm2=nullptr) {
-//     HCR_MULTIPLEXED_IMAGING_REQUIRE(ops.minimum, <=, ops.maximum);
+//     HCR_IMAGING_REQUIRE(ops.minimum, <=, ops.maximum);
 //     // Optimization for unconstrained case
 //     if (ops.minimum == real(minf) && ops.maximum == real(inf)) {
 //         if constexpr(la::is_sparse<A>) arma::spsolve(x, a, b);

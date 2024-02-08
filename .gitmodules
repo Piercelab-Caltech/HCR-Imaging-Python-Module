@@ -1,3 +1,3 @@
-[submodule "hcr_multiplexed_imaging/source/armadillo"]
-	path = hcr_multiplexed_imaging/source/armadillo
+[submodule "hcr_imaging/source/armadillo"]
+	path = hcr_imaging/source/armadillo
 	url = https://gitlab.com/conradsnicta/armadillo-code.git

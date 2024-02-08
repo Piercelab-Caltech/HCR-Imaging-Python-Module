@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <fstream>
 
-namespace hcr_multiplexed_imaging {
+namespace hcr_imaging {
 
 /******************************************************************************************/
 
