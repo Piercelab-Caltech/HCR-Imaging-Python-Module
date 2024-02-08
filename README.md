@@ -2,4 +2,4 @@
 
 Containing the Dot Detection 2.0 and Unmix 1.0 Packages.
 
-See [Molecular Technologies]([mt.org](https://www.moleculartechnologies.org/)) for instructions of use, including a detailed [User Guide](https://www.moleculartechnologies.org/).
+See Molecular Technologies ([mt.org](https://www.moleculartechnologies.org/)) for instructions of use, including a detailed [User Guide](https://www.moleculartechnologies.org/).
