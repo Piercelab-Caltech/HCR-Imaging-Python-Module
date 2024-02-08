@@ -4,11 +4,11 @@
 #include <limits>
 #include <sstream>
 #include <iostream>
-#define HCR_MULTIPLEXED_IMAGING_ASSERT(condition, ...) //if (!condition) throw ::unmix::Error(__VA_ARGS__)
-#define HCR_MULTIPLEXED_IMAGING_REQUIRE(a, op, b, ...) //HCR_MULTIPLEXED_IMAGING_ASSERT(a op b, a, b, __VA_ARGS__)
-#define HCR_MULTIPLEXED_IMAGING_ALL_EQUAL(msg, ...)
+#define HCR_IMAGING_ASSERT(condition, ...) //if (!condition) throw ::unmix::Error(__VA_ARGS__)
+#define HCR_IMAGING_REQUIRE(a, op, b, ...) //HCR_IMAGING_ASSERT(a op b, a, b, __VA_ARGS__)
+#define HCR_IMAGING_ALL_EQUAL(msg, ...)
 
-namespace hcr_multiplexed_imaging {
+namespace hcr_imaging {
 
 template <class ...Ts>
 auto print(Ts const &...ts) {

@@ -1,3 +1,3 @@
-# Dot Detection 2.0 and Unmix 1.0 packages
+# HCR image analysis software
 
-See PDF for documentation and usage.
+See [Molecular Technologies]([mt.org](https://www.moleculartechnologies.org/)) for instructions of use.

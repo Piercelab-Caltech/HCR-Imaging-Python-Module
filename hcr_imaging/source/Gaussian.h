@@ -4,9 +4,9 @@
 #include <numeric>
 #include <stdexcept>
 
-#define HCR_MULTIPLEXED_IMAGING_IF(cond) std::enable_if_t<cond, int> = 0
+#define HCR_IMAGING_IF(cond) std::enable_if_t<cond, int> = 0
 
-namespace hcr_multiplexed_imaging {
+namespace hcr_imaging {
 
 static constexpr real Pi = 3.141592653589793;
 
@@ -18,7 +18,7 @@ struct GaussianOptions {
     real truncate;
 
     GaussianOptions(AlternatingOptions const &ops, real reg=0, real trunc=5) : solver(ops), regularize(reg), truncate(trunc) {
-        HCR_MULTIPLEXED_IMAGING_REQUIRE(truncate, >, 0);
+        HCR_IMAGING_REQUIRE(truncate, >, 0);
     }
 };
 
@@ -27,7 +27,7 @@ struct GaussianOptions {
 /// Positions in a 1D array that have non-negligible contributions from a Gaussian(mu, sigma)
 template <class T, class X>
 auto gaussian_domain(X const &x, T const &mu, T const &sigma, T const &truncate) {
-    HCR_MULTIPLEXED_IMAGING_REQUIRE(x.size(), >, 0);
+    HCR_IMAGING_REQUIRE(x.size(), >, 0);
     if (x.size() == 1) return arma::span(0, 0);
     auto const rbox = 1 / (x(1) - x(0));
     auto const lim = x.size() - 1;
@@ -60,12 +60,12 @@ auto eval_gaussian_base(H const &h, F const &f, std::index_sequence<Is...>, Ts c
 }
 
 /// Positions in an ND array that have non-negligible contributions from a Gaussian(mu, sigma)
-template <class T, uint N, uint, class G, class M, class F, class H, class X, class ...Ts, HCR_MULTIPLEXED_IMAGING_IF(N == sizeof...(Ts))>
+template <class T, uint N, uint, class G, class M, class F, class H, class X, class ...Ts, HCR_IMAGING_IF(N == sizeof...(Ts))>
 T eval_gaussian(G const &, M const &, F const &f, H const &h, X const &, Ts const &...ts) {
     return eval_gaussian_base(h, f, std::make_index_sequence<sizeof...(Ts)>(), ts...);
 }
 
-template <class T, uint N, uint D, class G, class M, class F, class H, class X, class ...Ts, HCR_MULTIPLEXED_IMAGING_IF(N != sizeof...(Ts))>
+template <class T, uint N, uint D, class G, class M, class F, class H, class X, class ...Ts, HCR_IMAGING_IF(N != sizeof...(Ts))>
 T eval_gaussian(G &g, M const &m, F const &f, H const &h, X const &x, Ts const &...ts) {
     constexpr uint I = N - 1 - sizeof...(Ts);
     T const s2 = pow(m(1, I), -2), s3 = pow(m(1, I), -3);
@@ -101,7 +101,7 @@ auto one_gaussian(G &grad, M const &m, H const &h, X const &grid, T const &trunc
         f[d] = arma::exp((-T(0.5) / sq(m(1, d))) * (f[d] % f[d])) / sqrt(2 * T(Pi) * sq(m(1, d)));
     }
     auto out = eval_gaussian<T, N, D>(grad, m, std::move(f), h(domains[Is]...), std::move(views));
-    HCR_MULTIPLEXED_IMAGING_ASSERT(is_finite(out));
+    HCR_IMAGING_ASSERT(is_finite(out));
     return out;
 }
 
@@ -119,9 +119,9 @@ auto one_gaussian(G &grad, M const &m, H const &h, X const &grid, T truncate) {
 template <class T, uint N, uint D, class G, class M, class X>
 auto squared_gaussian(G &grad, M const &m, X const &grid, T const &truncate) {
     std::array<T, N> factors;
-    HCR_MULTIPLEXED_IMAGING_REQUIRE(grid.size(), ==, N);
-    HCR_MULTIPLEXED_IMAGING_REQUIRE(grad.n_cols, ==, N);
-    HCR_MULTIPLEXED_IMAGING_REQUIRE(m.n_cols, ==, N);
+    HCR_IMAGING_REQUIRE(grid.size(), ==, N);
+    HCR_IMAGING_REQUIRE(grad.n_cols, ==, N);
+    HCR_IMAGING_REQUIRE(m.n_cols, ==, N);
     for (std::size_t d = 0; d != grid.size(); ++d) {
         T const mm = -m(0, d), s = m(1, d);
         T const c = 1 / (2 * Pi * sq(s));
@@ -192,7 +192,7 @@ auto two_gaussian(G &grad, M const &mi, M const &mj, X const &grid, T const &tru
 
 template <class T, uint N, uint D, class M, class G1, class G2, class ...Ts>
 la::SpMat<T> gmm_operator(la::uword z, T regularize, M const &m, G1 &diag_grad, G2 &off_grad, la::umat const &pairs, Ts const &...ts) {
-    HCR_MULTIPLEXED_IMAGING_REQUIRE(pairs.n_rows, ==, 2);
+    HCR_IMAGING_REQUIRE(pairs.n_rows, ==, 2);
     auto const np = pairs.n_cols;
     la::umat locs(2, z + 2 * np);
     for (std::size_t n = 0; n != z; ++n) // diagonal indices
@@ -220,7 +220,7 @@ la::Col<T> gmm_rhs(G &grad, M const &m, Ts const &...ts) {
     la::Col<T> b(m.n_slices);
     for (std::size_t i = 0; i != m.n_slices; ++i)
         b(i) = one_gaussian<T, N, D>(grad.slice(i), m.slice(i), ts...);
-    HCR_MULTIPLEXED_IMAGING_ASSERT(b.is_finite());
+    HCR_IMAGING_ASSERT(b.is_finite());
     return b;
 }
 
@@ -248,10 +248,10 @@ auto gmm_gradient(H const &image, M const &m, X const &grid, la::umat const &pai
     // Solve for weights
     la::Col<T> x(b.n_rows, arma::fill::zeros);
     auto conv = bound_solve(x, A, b, bound, ops.solver);
-    HCR_MULTIPLEXED_IMAGING_REQUIRE(conv.unconverged, ==, 0, "NNLS did not converge");
+    HCR_IMAGING_REQUIRE(conv.unconverged, ==, 0, "NNLS did not converge");
 
     // Get objective = x^T A x - 2 x^T b -- (b^T b is constant and not included)
-    HCR_MULTIPLEXED_IMAGING_ASSERT(all_of(x, is_finite));
+    HCR_IMAGING_ASSERT(all_of(x, is_finite));
     T const objective = dot(x, A * x) - 2 * dot(x, b);
 
     if (D != 0) {
@@ -260,14 +260,14 @@ auto gmm_gradient(H const &image, M const &m, X const &grid, la::umat const &pai
             grad.slice(i) *= -2 * x(i);
             grad.slice(i) += sq(x(i)) * diag_grad.slice(i);
         }
-        HCR_MULTIPLEXED_IMAGING_ASSERT(all_of(grad, is_finite));
+        HCR_IMAGING_ASSERT(all_of(grad, is_finite));
 
         for (std::size_t n = 0; n != npairs; ++n) {
             auto const xx = 2 * x(pairs(0, n)) * x(pairs(1, n));
             grad.slice(pairs(0, n)) += xx * off_grad.slice(n).head_cols(N);
             grad.slice(pairs(1, n)) += xx * off_grad.slice(n).tail_cols(N);
         }
-        HCR_MULTIPLEXED_IMAGING_ASSERT(all_of(grad, is_finite));
+        HCR_IMAGING_ASSERT(all_of(grad, is_finite));
     }
 
     return std::make_tuple(objective, std::move(x), std::move(grad));

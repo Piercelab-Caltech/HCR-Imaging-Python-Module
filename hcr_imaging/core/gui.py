@@ -20,7 +20,7 @@ def image_tap(figure):
 def javascript(name, path=None, cache={}):
     '''Fetch javascript text from a JS file'''
     if path is None:
-        path = pkg_resources.resource_filename('hcr_multiplexed_imaging', 'templates/callbacks.js')
+        path = pkg_resources.resource_filename('hcr_imaging', 'templates/callbacks.js')
     js = cache.get(path)
     if js is None:
         js = pathlib.Path(path).read_text().split('//callback=')
