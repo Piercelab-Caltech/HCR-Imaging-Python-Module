@@ -1,3 +1,5 @@
-# HCR image analysis software
+# HCR Imaging Python Module
+
+Containing the Dot Detection 2.0 and Unmix 1.0 Packages.
 
 See [Molecular Technologies]([mt.org](https://www.moleculartechnologies.org/)) for instructions of use.
