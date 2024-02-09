@@ -82,8 +82,8 @@ def detect_dots_v1(image, sigma_sharp, sigma_smooth, sigma0, euclidean, n_candid
 ################################################################################
 
 @parallelize_first
-def detect_dots(image, n_candidates, sigma_smooth=0.5, sigma=0.2, smooth_factor=1, smooth_threshold=None, *, 
-    r_min=None, agglomerate=False, n_maxima=int(1e6), allow_edges=True, optimize='center', sigma_sharp=0, 
+def detect_dots(image, n_candidates, sigma_smooth, sigma, smooth_factor=1, smooth_threshold=None, *, 
+    r_min=None, agglomerate=False, n_maxima=100000, allow_edges=True, optimize='center', sigma_sharp=0, 
     gaussian=None, weight_sigma=None, k_min=2, dtype=np.float32):
     '''
     Detect dots in a given image. 
