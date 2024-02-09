@@ -257,11 +257,11 @@ def doh_weight(values, *sigma, ndim=None):
 
 ################################################################################
 
-def max_detect(I, *, radius, allow_edges: bool, euclidean: bool, max_maxima: int):
+def max_detect(I, *, radius, allow_edges: bool, euclidean: bool, n_maxima: int):
     '''
     use a cubic filter if not euclidean else do a distance search
     radius and box can be scalars or arrays, usually just box is an array
-    max_maxima: only consider the highest # of maxima
+    n_maxima: only consider the highest # of maxima
     '''
     # Find all local maxima if Euclidean else set up the box
     size = 3 if euclidean else np.array(2 * np.round(radius / box(I)) + 1).astype('int')
@@ -276,7 +276,7 @@ def max_detect(I, *, radius, allow_edges: bool, euclidean: bool, max_maxima: int
     values = A[mask]
     log.info('Found {} total maxima'.format(len(values)))
     # mi
-    order = np.argsort(values)[::-1][:max_maxima]
+    order = np.argsort(values)[::-1][:n_maxima]
     values, mask = values[order], [m[order] for m in mask]
 
     log.info('Got {} maxima out of {} pixels'.format(len(values), np.prod(A.shape)))
@@ -292,7 +292,7 @@ def max_detect(I, *, radius, allow_edges: bool, euclidean: bool, max_maxima: int
 
 ################################################################################
 
-def candidate_dots(I, *, low, high, sigma, min_separation, euclidean, allow_edges, max_maxima, hi_pass_factor=1, hi_pass_threshold=None):
+def candidate_dots(I, *, low, high, sigma, min_separation, euclidean, allow_edges, n_maxima, smooth_factor=1, smooth_threshold=None):
     '''returns image, hessian image, centers in um, maxima values'''
     assert I.dtype in (np.float32, np.float64, float)
     log.info('Step 1: low pass blur')
@@ -300,11 +300,11 @@ def candidate_dots(I, *, low, high, sigma, min_separation, euclidean, allow_edge
         I = lo_pass_blur(I, low)
     log.info('Step 2: high pass blur')
     if high is not None:
-        I = hi_pass_blur(I, high, factor=hi_pass_factor, threshold=hi_pass_threshold)
+        I = hi_pass_blur(I, high, factor=smooth_factor, threshold=smooth_threshold)
     log.info('Step 3: DoH convolution')
     H = mdet_of_hessian(I, sigmas=[sigma])
     log.info('Step 4: maximum detection')
-    V, M = max_detect(H, radius=min_separation, allow_edges=allow_edges, euclidean=euclidean, max_maxima=max_maxima)
+    V, M = max_detect(H, radius=min_separation, allow_edges=allow_edges, euclidean=euclidean, n_maxima=n_maxima)
     log.info('Step 5: determine weights')
     V = doh_weight(V, sigma, sigma, ndim=np.ndim(I))
     return dict(pixel_centers=M * box(I), blurred=I, hessian=H, maxima=V)

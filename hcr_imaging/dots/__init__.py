@@ -66,13 +66,13 @@ def parallelize_first(function):
 ################################################################################
 
 @parallelize_first
-def detect_dots_v1(image, lo_pass, hi_pass, sigma0, euclidean, max_dots, thresh, min_ratio):
+def detect_dots_v1(image, sigma_sharp, sigma_smooth, sigma0, euclidean, n_candidates, thresh, k_min):
     '''
     An old dot detection algorithm. Unsupported.
     '''
-    min_separation = min_ratio * DOH_MINIMUM_FACTOR * sigma0
-    out = candidate_dots(image.astype(np.float32), low=lo_pass, high=hi_pass, sigma=sigma0, min_separation=min_separation, euclidean=True)
-    out.update(optimize_gmm(out['blurred'].data, out['pixel_centers'][:max_dots], (sigma0**2 + lo_pass**2)**0.5, sigma_bounds=(lo_pass, hi_pass),
+    min_separation = k_min * DOH_MINIMUM_FACTOR * sigma0
+    out = candidate_dots(image.astype(np.float32), low=sigma_sharp, high=sigma_smooth, sigma=sigma0, min_separation=min_separation, euclidean=True)
+    out.update(optimize_gmm(out['blurred'].data, out['pixel_centers'][:n_candidates], (sigma0**2 + sigma_sharp**2)**0.5, sigma_bounds=(sigma_sharp, sigma_smooth),
         box=box(out['blurred']), optimize='center', method='L-BFGS-B', options={'ftol': 1e-8, 'disp': False}), dtype=np.float32)
 
     keep = remove_close_pairs(out['centers'], out['weights'], radii=min_separation)
@@ -82,22 +82,28 @@ def detect_dots_v1(image, lo_pass, hi_pass, sigma0, euclidean, max_dots, thresh,
 ################################################################################
 
 @parallelize_first
-def detect_dots(image, max_dots, hi_pass=0.5, sigma=0.2, hi_pass_factor=1, hi_pass_threshold=None, *, 
-    limit_radii=None, agglomerate=False, max_maxima=int(1e6), allow_edges=True, optimize='center', lo_pass=0, 
-    gaussian=None, weight_sigma=None, min_ratio=1, dtype=np.float32):
+def detect_dots(image, n_candidates, sigma_smooth=0.5, sigma=0.2, smooth_factor=1, smooth_threshold=None, *, 
+    r_min=None, agglomerate=False, n_maxima=int(1e6), allow_edges=True, optimize='center', sigma_sharp=0, 
+    gaussian=None, weight_sigma=None, k_min=2, dtype=np.float32):
     '''
-    Detect dots in a given image.
-    If first argument is a tuple, evaluate in parallel for each item in the tuple
+    Detect dots in a given image. 
+    If first argument is a tuple, evaluate in parallel for each item in the tuple.
 
-    - `max_dots` (int): maximum number of dots to consider
-    - `lo_pass` (float/array): lengthscale less than the dot width (in microns)
-    - `hi_pass` (float/array): lengthscale greater than the dot width (in microns)
-    - `sigma` (float/array): expected dot width (in microns)
-    - `hi_pass_factor` (float): remove features larger than the high pass lengthscale by a factor of this number
-    - `hi_pass_threshold` (float): after removing high pass features, zero any pixels below this threshold if given
-    - `limit_radii` (float/array): don't detect any candidate dots that are closer than this radius or radii
-    - `min_ratio` (float): factor of separation between dots, use only if limit_radii is not specified
-    - `max_maxima` (int): number of local maxima in the determinant of Hessian to consider (typically the default is fine)
+    - `sigma` (float/array): approximate expected dot radius (in microns)
+    - `sigma_smooth` (float/array): lengthscale greater than the dot width (in microns)
+    - `sigma_sharp` (float/array): lengthscale less than the dot width, will result in a preliminary blur if nonzero (in microns)
+    - `n_candidates` (int): loose upper bound on the number of dots
+    - `k_min` (float): factor of separation between dots, used only if r_min is not specified
+    - `r_min` (float/array): minimum separation between dots in the same channel (in microns)
+    - `n_maxima` (int): upper bound on the number of local maxima in the determinant of Hessian considered
+
+    Typically, the default values of `n_maxima=1000000`, `sigma_sharp=0`, `k_min=2`, and `r_min=0` will work well.
+    For `n_candidates`, a rough number may be chosen, so long as it is obviously higher than the true number of dots.
+    However, a larger number results in a longer computation time.
+    A number of less commonly supplied options are also specifiable for advanced users:
+
+    - `smooth_factor` (float): remove features larger than the high pass lengthscale by a factor of this number
+    - `smooth_threshold` (float): after removing high pass features, zero any pixels below this threshold if given
     - `agglomerate` (bool): if dots are combined due to being too close, should their weights also be combined?
     - `allow_edges` (bool): allow maxima to be detected on the edges of the image
     - `weight_sigma` (float/array): expected dot width (in microns) -- used for Gaussian optimization, defaults to the same as `sigma`
@@ -106,17 +112,17 @@ def detect_dots(image, max_dots, hi_pass=0.5, sigma=0.2, hi_pass_factor=1, hi_pa
     '''
     if weight_sigma is None:
         weight_sigma = sigma
-    if limit_radii is None:
-        limit_radii = min_ratio * DOH_MINIMUM_FACTOR * sigma
+    if r_min is None:
+        r_min = k_min * DOH_MINIMUM_FACTOR * sigma
     else:
-        assert min_ratio == 1, 'Specifying min_ratio has no effect if limit_radii is specified'
+        assert k_min == 1, 'Specifying k_min has no effect if r_min is specified'
     # Run convolutions
-    out = candidate_dots(image.astype(dtype), low=lo_pass, high=hi_pass, sigma=sigma, 
-        min_separation=limit_radii, euclidean=True, hi_pass_factor=hi_pass_factor, 
-        allow_edges=allow_edges, hi_pass_threshold=hi_pass_threshold, max_maxima=max_maxima)
+    out = candidate_dots(image.astype(dtype), low=sigma_sharp, high=sigma_smooth, sigma=sigma, 
+        min_separation=r_min, euclidean=True, smooth_factor=smooth_factor, 
+        allow_edges=allow_edges, smooth_threshold=smooth_threshold, n_maxima=n_maxima)
     # Remove candidate dots that are too close. Agglomeration doesn't make sense here
     _, out['pixel_centers'], out['maxima'] = remove_close_pairs(
-        out['pixel_centers'], out['maxima'], radii=limit_radii, agglomerate=False)
+        out['pixel_centers'], out['maxima'], radii=r_min, agglomerate=False)
     # Solve GMM without position modification
     out['solve_value'], out['solve_weights'] = calculate_gmm(out['blurred'], out['pixel_centers'],
         np.full_like(out['pixel_centers'], weight_sigma), box=box(image), dtype=dtype, gaussian=gaussian)
@@ -126,14 +132,14 @@ def detect_dots(image, max_dots, hi_pass=0.5, sigma=0.2, hi_pass_factor=1, hi_pa
     out['maxima'] = out['maxima'][order]
     # Optimize GMM positions
     options = {'gtol': 1e-8, 'disp': False}#, 'ftol': 0e-20}
-    out.update(optimize_gmm(out['blurred'].data, out['pixel_centers'][:max_dots], sigma,
+    out.update(optimize_gmm(out['blurred'].data, out['pixel_centers'][:n_candidates], sigma,
         box=box(out['blurred']), method='L-BFGS-B', options=options,
         optimize=optimize, gaussian=gaussian, sigma_bounds=None, dtype=dtype))
     out['full_centers'], out['full_weights'] = c, w = out['centers'], out['weights']
     # Remove zero dots
     c, w = c[w > 0], w[w > 0]
     # Remove dots that became too close
-    _, c, w = remove_close_pairs(c, w, radii=limit_radii, agglomerate=agglomerate)
+    _, c, w = remove_close_pairs(c, w, radii=r_min, agglomerate=agglomerate)
     # Threshold results
     # if maxima_threshold is not None:
     #     w, c = threshold(maxima_threshold, w, c)
