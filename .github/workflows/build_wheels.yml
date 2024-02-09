@@ -1,0 +1,36 @@
+name: Build
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        #os: [ubuntu-20.04]
+        os: [ubuntu-20.04, macos-11, windows-2019]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          clean: true
+
+      - uses: actions/setup-python@v3
+      
+      - name: Install cibuildwheel
+        run: python -m pip install cibuildwheel==2.16.5
+
+      - name: Build wheels
+        working-directory: ./
+        run: python -m cibuildwheel --output-dir ./wheelhouse --config-file pyproject.toml
+        env:
+           CIBW_ARCHS_MACOS: x86_64 arm64
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ./wheelhouse/*.whl
