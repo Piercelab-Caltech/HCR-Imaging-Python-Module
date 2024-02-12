@@ -1,5 +1,2 @@
 mouse-brain-unmixing-example.ipynb filter=lfs diff=lfs merge=lfs -text
 mouse-brain-unmixing-matrix-example.ipynb filter=lfs diff=lfs merge=lfs -text
-zebrafish-unmixing-example.ipynb filter=lfs diff=lfs merge=lfs -text
-dot-detection-example.ipynb filter=lfs diff=lfs merge=lfs -text
-zebrafish-unmixing-matrix-example.ipynb filter=lfs diff=lfs merge=lfs -text
