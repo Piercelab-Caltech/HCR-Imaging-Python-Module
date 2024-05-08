@@ -41,11 +41,12 @@ hcr_imaging = ["source/*"]
 [tool.setuptools]
 license-files = ["LICENSE.txt"]
 
-[tool.cibuildwheel.linux]
-before-all = "yum install -y blas-static"
-environment = "HCR_IMAGING_BLAS=/usr/lib64/libblas.a"
+# Some annoyance in using BLAS on Linux wheels currently, so disabling BLAS for now
+#[tool.cibuildwheel.linux]
+#before-all = "yum install -y blas-static"
+#environment = "HCR_IMAGING_BLAS=/usr/lib64/libblas.a"
 
-[[tool.cibuildwheel.overrides]]
-select = "*-musllinux*"
-before-all = "apk add openblas-static"
-environment = "HCR_IMAGING_BLAS=/usr/lib/libopenblas.a"
+#[[tool.cibuildwheel.overrides]]
+#select = "*-musllinux*"
+#before-all = "apk add openblas-static"
+#environment = "HCR_IMAGING_BLAS=/usr/lib/libopenblas.a"
